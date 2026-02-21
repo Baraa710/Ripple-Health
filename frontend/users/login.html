@@ -1,0 +1,58 @@
+<!doctype html>
+<!--
+TODO: This is a comment. Change this header comment to describe the 
+web page and include your name as author.
+-->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title> Patient's Login </title>
+    <link rel="stylesheet" href="platform.css">
+</head>
+
+<body>
+    <div id="container">
+
+        <div id="header"> 
+            <h2> Patient Portal </h2>
+            <p class="subheading"> View invoice, pay directly, or start crowdfunding. </p>
+        </div>
+ 
+        <div id="nav">
+            <a href="/"> Home </a>
+            <a href="/campaign"> Browse Campaigns </a>
+            <a href="/help"> Help </a>
+        </div>
+
+            <div id="content">
+
+                <div class="card">
+                    <h3>Log in</h3>
+                            <form action="/patient/dashboard" method="POST">
+                                <label for="email">Email</label><br>
+                                <input type="email" id="email" name="email" placeholder="patient@email.com" required><br><br>
+
+                                <label for="patient_id">Patient ID</label><br>
+                                <input type="text" id="patient_id" name="patient_id" placeholder="P1023" required><br><br>
+                                <button type="submit">Continue</button>
+                            </form>
+
+                </div>   
+                <div class="card">
+
+                    <h3>What you can do here</h3>
+                        <ul>
+                            <li>See invoices posted by verified doctors</li>
+                            <li>Pay your invoice directly via XRPL</li>
+                            <li>Start a crowdfunding campaign if needed</li>
+                            <li>Report suspicious charges (crawlback demo)</li>
+                        </ul>
+                </div>
+
+            </div>
+    </div>
+</body>
+
+</html>
