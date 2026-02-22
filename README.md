@@ -1,10 +1,34 @@
-# Ripple-Health
+# CrowdCare
+
 A DeFi medical payment and crowdfunding platform built on the XRP Ledger (XRPL)
 
-## Description
-Crowdfund & Connect is a decentralized finance (DeFi) healthcare payment platform built on the XRP Ledger. It enables direct doctor-to-patient billing, peer-to-peer payments, and built-in medical crowdfunding without relying on traditional financial methods.
+## Inspiration
 
-The platform increases trust, transparency, and accessibility in healthcare payments using blockchain technology.
+Access to healthcare remains a major global challenge, especially for people facing financial barriers or lack of insurance. Many delay treatment because they cannot afford upfront costs. Meanwhile, donors who want to help hesitate because they cannot verify whether medical fundraisers are legitimate. We set out to build a platform that uses blockchain to increase transparency, reduce financial barriers, and build verifiable trust in healthcare payments.
+
+## What it does
+
+CrowdCare is a decentralized healthcare payment and crowdfunding platform built on the XRP Ledger. Verified doctors post medical invoices, and patients can pay instantly using XRP or enable crowdfunding to receive donor support. Doctors are verified on-chain using XRPL's native Credentials amendment — anyone can confirm a doctor's legitimacy by querying the public ledger. Donors contribute knowing charges come from cryptographically verified providers. A crawlback mechanism allows suspicious invoices to be reported and redacted, preventing further payments to bad actors.
+
+## How we built it
+
+We used Flask for the backend API, HTML/CSS/JavaScript for the frontend, and SQLAlchemy with SQLite for data management. The platform supports three user roles — doctors, patients, and donors — each with dedicated dashboards. All payments use real wallet-to-wallet XRP transfers on the testnet via the `xrpl-py` library. For verification, when an admin verifies a doctor, the platform issues a `CredentialCreate` transaction on-chain. The doctor accepts it via `CredentialAccept`, and campaigns display an "On-Chain Verified" badge once confirmed.
+
+## Challenges we ran into
+
+Our biggest challenge was handling ambiguous responses from XRPL's `submit_and_wait` function. Credential transactions would succeed on the ledger, but the library would return empty results or throw exceptions before confirming the outcome — causing the UI to report failure despite on-chain success. We solved this with a ledger-query fallback: when responses are ambiguous, we query `AccountObjects` to verify the credential's actual on-chain state and report accordingly.
+
+## Accomplishments that we're proud of
+
+We built a fully functional prototype demonstrating the complete flow: doctors create invoices, patients pay or crowdfund, donors contribute — all with real XRP transactions. We're especially proud of integrating XRPL Credentials for on-chain doctor verification, making trust genuinely decentralized rather than locked in a database. The crawlback mechanism and doctor reserve accounts add practical safeguards for real-world healthcare crowdfunding.
+
+## What we learned
+
+We learned how to work with blockchain transactions and handle distributed system realities — "transaction submitted" doesn't always mean "confirmation received." We built resilient systems that verify on-chain state rather than trusting API responses. We also gained experience designing role-based platforms and applying XRPL's native features to real accessibility challenges.
+
+## What's next for CrowdCare
+
+We plan to integrate **XRPL Escrow** to hold crowdfunding contributions until campaign goals are met, with automatic refunds if they aren't. **XRPL Checks** would enable non-custodial refunds when fraudulent invoices are redacted. **XRPL DIDs** would give users portable, verifiable on-chain identities. Long term, we aim to pilot with clinics and scale globally as infrastructure for transparent, accessible healthcare payments.
 
 ## Features
 - **On-Chain Doctor Verification (XRPL Credentials)**
