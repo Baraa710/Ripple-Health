@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Donor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='platform.css') }}">
+</head>
+<body>
+    <div id="container">
+
+        <div id="header">
+            <h2>Donor Dashboard</h2>
+            <p class="subtitle" id="welcome-msg">Loading...</p>
+        </div>
+
+        <div id="nav">
+            <a href="/">Home</a>
+            <a href="/campaigns">Browse Campaigns</a>
+            <a href="#" id="logout-link">Logout</a>
+        </div>
+
+        <div id="content">
+
+            <div class="card">
+                <h3>Your Wallet</h3>
+                <p>XRP Address: <code id="xrp-address">—</code></p>
+                <button id="fund-btn">Fund Wallet (Testnet)</button>
+                <span id="fund-status" class="status-msg"></span>
+            </div>
+
+            <div class="card">
+                <h3>Active Campaigns</h3>
+                <p>Support patients by contributing to their medical invoices.</p>
+                <div id="campaigns-list"><p>Loading...</p></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    async function apiFetch(url, opts) {
+        const res = await fetch(url, opts);
+        if (res.status === 401) { window.location.href = "/donors/login"; return null; }
+        return res;
+    }
+
+    async function loadProfile() {
+        const res = await apiFetch("/api/me");
+        if (!res) return;
+        const u = await res.json();
+        document.getElementById("welcome-msg").textContent = "Welcome, " + u.name;
+        document.getElementById("xrp-address").textContent = u.xrp_address;
+    }
+
+    async function loadCampaigns() {
+        const res = await apiFetch("/api/campaigns");
+        if (!res) return;
+        const data = await res.json();
+        const container = document.getElementById("campaigns-list");
+
+        if (!data.campaigns || data.campaigns.length === 0) {
+            container.innerHTML = "<p>No active campaigns right now.</p>";
+            return;
+        }
+
+        container.innerHTML = data.campaigns.map(c => {
+            const remaining = Math.max(0, c.target_amount - c.current_amount).toFixed(2);
+            const pct = Math.min(100, (c.current_amount / c.target_amount * 100)).toFixed(0);
+            return `
+            <div class="card campaign-card">
+                <div class="invoice-header">
+                    <strong>${c.name}</strong>
+                    ${c.is_verified_doctor ? '<span class="badge badge-verified">Verified Doctor</span>' : ""}
+                </div>
+                <p>Doctor: ${c.doctor_name || "Unknown"}</p>
+                <p>${c.description || ""}</p>
+                <p>Goal: <strong>${c.target_amount} XRP</strong> &mdash; Raised: ${c.current_amount} XRP (${pct}%)</p>
+                <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                <p>Still needed: <strong>${remaining} XRP</strong></p>
+                ${parseFloat(remaining) > 0 ? `
+                <form onsubmit="contribute(event, ${c.invoice_id}, this)">
+                    <input type="number" name="amount" placeholder="Amount (XRP)" step="0.01" min="0.01" max="${remaining}" required style="width:140px;">
+                    <button type="submit">Contribute</button>
+                </form>` : `<p class="success-msg">Fully funded!</p>`}
+            </div>`;
+        }).join("");
+    }
+
+    async function contribute(e, invoiceId, form) {
+        e.preventDefault();
+        const amount = parseFloat(form.querySelector("[name=amount]").value);
+        const res = await apiFetch("/api/payments/pay/" + invoiceId, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ amount, method: "crowdfunding" }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        alert(data.message || data.error);
+        loadCampaigns();
+    }
+
+    document.getElementById("fund-btn").addEventListener("click", async () => {
+        const status = document.getElementById("fund-status");
+        status.textContent = "Funding...";
+        const res = await apiFetch("/api/fund-me", { method: "POST" });
+        if (!res) return;
+        const data = await res.json();
+        status.textContent = data.message || data.error;
+    });
+
+    document.getElementById("logout-link").addEventListener("click", async (e) => {
+        e.preventDefault();
+        await apiFetch("/api/logout", { method: "POST" });
+        window.location.href = "/donors/login";
+    });
+
+    loadProfile();
+    loadCampaigns();
+    </script>
+</body>
+</html>

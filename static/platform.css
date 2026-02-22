@@ -1,27 +1,207 @@
-.subtitle { margin-top: -10px; opacity: 0.8; }
+body {
+  background: #e8f4f8;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
 
-#nav a { margin-right: 12px; text-decoration: none; }
+#container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px;
+}
 
+#header h2 {
+  margin-bottom: 2px;
+}
+
+.subtitle {
+  margin-top: 0;
+  opacity: 0.7;
+  font-size: 0.95em;
+}
+
+#nav {
+  margin: 12px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+#nav a {
+  margin-right: 14px;
+  text-decoration: none;
+  color: #0066cc;
+}
+
+#nav a:hover {
+  text-decoration: underline;
+}
+
+#footer {
+  margin-top: 30px;
+  padding-top: 12px;
+  border-top: 1px solid #ccc;
+  font-size: 0.85em;
+  opacity: 0.6;
+  text-align: center;
+}
+
+/* Cards */
 .card {
   padding: 16px;
   margin: 12px 0;
   border: 1px solid #ddd;
   border-radius: 10px;
+  background: #fff;
 }
 
-input {
+.card h3 {
+  margin-top: 0;
+}
+
+.invoice-card {
+  border-left: 4px solid #0066cc;
+}
+
+.campaign-card {
+  border-left: 4px solid #28a745;
+}
+
+/* Forms */
+input, select {
   width: 100%;
   max-width: 420px;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 0.95em;
+}
+
+input[type="checkbox"] {
+  width: auto;
 }
 
 button {
-  padding: 10px 14px;
+  padding: 10px 16px;
   border: 0;
   border-radius: 8px;
   cursor: pointer;
+  background: #0066cc;
+  color: #fff;
+  font-size: 0.95em;
 }
 
-body { background: lightblue; }
+button:hover {
+  background: #005bb5;
+}
+
+.btn-danger {
+  background: #cc3333;
+}
+
+.btn-danger:hover {
+  background: #aa2222;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #fff;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.badge-unpaid     { background: #cc9900; }
+.badge-partially_paid { background: #e67e00; }
+.badge-paid       { background: #28a745; }
+.badge-reported   { background: #cc3333; }
+.badge-redacted   { background: #666; }
+.badge-verified   { background: #28a745; }
+
+/* Invoice header row */
+.invoice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.treatment {
+  font-style: italic;
+  color: #555;
+  margin: 4px 0;
+}
+
+.report-reason {
+  color: #cc3333;
+  font-size: 0.9em;
+}
+
+/* Actions row */
+.actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Messages */
+.error-msg {
+  color: #cc3333;
+  background: #ffe5e5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.success-msg {
+  color: #28a745;
+  background: #e5ffe5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.status-msg {
+  margin-left: 10px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #28a745;
+  border-radius: 6px;
+  transition: width 0.3s;
+}
+
+code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+li {
+  margin-bottom: 4px;
+}

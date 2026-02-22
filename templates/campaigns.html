@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Active Campaigns - CrowdCare</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='platform.css') }}">
+</head>
+<body>
+    <div id="container">
+
+        <div id="header">
+            <h2>CrowdCare</h2>
+            <p class="subtitle">Active crowdfunding campaigns for medical invoices</p>
+        </div>
+
+        <div id="nav">
+            <a href="/">Home</a>
+            <a href="/patients/login">Patient</a>
+            <a href="/doctors/login">Doctor</a>
+            <a href="/donors/login">Donor</a>
+        </div>
+
+        <div id="content">
+
+            <div class="card">
+                <label>
+                    <input type="checkbox" id="verified-only"> Show only verified doctors
+                </label>
+            </div>
+
+            <div id="campaigns-list"><p>Loading campaigns...</p></div>
+
+        </div>
+    </div>
+
+    <script>
+    async function loadCampaigns() {
+        const verifiedOnly = document.getElementById("verified-only").checked;
+        const url = "/api/campaigns" + (verifiedOnly ? "?verified_only=true" : "");
+        const res = await fetch(url);
+        const data = await res.json();
+        const container = document.getElementById("campaigns-list");
+
+        if (!data.campaigns || data.campaigns.length === 0) {
+            container.innerHTML = "<div class='card'><p>No active campaigns right now.</p></div>";
+            return;
+        }
+
+        container.innerHTML = data.campaigns.map(c => {
+            const remaining = Math.max(0, c.target_amount - c.current_amount).toFixed(2);
+            const pct = Math.min(100, (c.current_amount / c.target_amount * 100)).toFixed(0);
+            return `
+            <div class="card campaign-card">
+                <div class="invoice-header">
+                    <strong>${c.name}</strong>
+                    ${c.is_verified_doctor ? '<span class="badge badge-verified">Verified Doctor</span>' : ""}
+                </div>
+                <p>Doctor: ${c.doctor_name || "Unknown"}</p>
+                <p>${c.description || ""}</p>
+                <p>Goal: <strong>${c.target_amount} XRP</strong> &mdash; Raised: ${c.current_amount} XRP (${pct}%)</p>
+                <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                <p>Still needed: <strong>${remaining} XRP</strong></p>
+                ${parseFloat(remaining) > 0
+                    ? '<p><a href="/donors/login">Log in as donor to contribute</a></p>'
+                    : '<p class="success-msg">Fully funded!</p>'}
+            </div>`;
+        }).join("");
+    }
+
+    document.getElementById("verified-only").addEventListener("change", loadCampaigns);
+    loadCampaigns();
+    </script>
+</body>
+</html>

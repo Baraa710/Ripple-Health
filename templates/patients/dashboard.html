@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='platform.css') }}">
+</head>
+<body>
+    <div id="container">
+
+        <div id="header">
+            <h2>Patient Dashboard</h2>
+            <p class="subtitle" id="welcome-msg">Loading...</p>
+        </div>
+
+        <div id="nav">
+            <a href="/">Home</a>
+            <a href="/campaigns">Browse Campaigns</a>
+            <a href="#" id="logout-link">Logout</a>
+        </div>
+
+        <div id="content">
+
+            <div class="card">
+                <h3>Your Wallet</h3>
+                <p>XRP Address: <code id="xrp-address">—</code></p>
+                <button id="fund-btn">Fund Wallet (Testnet)</button>
+                <span id="fund-status" class="status-msg"></span>
+            </div>
+
+            <div class="card">
+                <h3>Your Invoices</h3>
+                <div id="invoices-list"><p>Loading...</p></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    const API = "";
+
+    async function apiFetch(url, opts) {
+        const res = await fetch(API + url, opts);
+        if (res.status === 401) { window.location.href = "/patients/login"; return null; }
+        return res;
+    }
+
+    async function loadProfile() {
+        const res = await apiFetch("/api/me");
+        if (!res) return;
+        const u = await res.json();
+        document.getElementById("welcome-msg").textContent = "Welcome, " + u.name;
+        document.getElementById("xrp-address").textContent = u.xrp_address;
+    }
+
+    async function loadInvoices() {
+        const res = await apiFetch("/api/invoices");
+        if (!res) return;
+        const data = await res.json();
+        const container = document.getElementById("invoices-list");
+
+        if (!data.invoices || data.invoices.length === 0) {
+            container.innerHTML = "<p>No invoices yet.</p>";
+            return;
+        }
+
+        container.innerHTML = data.invoices.map(inv => {
+            const paid = (inv.payments || []).reduce((s, p) => s + p.amount, 0);
+            const remaining = Math.max(0, inv.amount - paid).toFixed(2);
+            const crowdfundLabel = inv.crowdfund_enabled ? "ON" : "OFF";
+            const canAct = !["paid", "redacted", "reported"].includes(inv.status);
+
+            return `
+            <div class="card invoice-card">
+                <div class="invoice-header">
+                    <strong>Invoice #${inv.id}</strong>
+                    <span class="badge badge-${inv.status}">${inv.status}</span>
+                </div>
+                ${inv.treatment_description ? `<p class="treatment">${inv.treatment_description}</p>` : ""}
+                <p>Amount: <strong>${inv.amount} XRP</strong> &mdash; Paid: ${paid} XRP &mdash; Remaining: ${remaining} XRP</p>
+                <p>Crowdfunding: <strong>${crowdfundLabel}</strong></p>
+                ${inv.report_reason ? `<p class="report-reason">Reported: ${inv.report_reason}</p>` : ""}
+
+                ${canAct ? `
+                <div class="actions">
+                    <button onclick="payInvoice(${inv.id}, ${remaining})">Pay ${remaining} XRP</button>
+                    <button onclick="toggleCrowdfund(${inv.id}, ${!inv.crowdfund_enabled})">${inv.crowdfund_enabled ? "Disable" : "Enable"} Crowdfunding</button>
+                    <button class="btn-danger" onclick="reportInvoice(${inv.id})">Report</button>
+                </div>
+                ` : ""}
+            </div>`;
+        }).join("");
+    }
+
+    async function payInvoice(id, amount) {
+        if (amount <= 0) { alert("Nothing to pay"); return; }
+        const res = await apiFetch("/api/payments/pay/" + id, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ amount: parseFloat(amount) }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        alert(data.message || data.error);
+        loadInvoices();
+    }
+
+    async function toggleCrowdfund(id, enable) {
+        const res = await apiFetch("/api/invoices/" + id, {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ crowdfund_enabled: enable }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (data.error) alert(data.error);
+        loadInvoices();
+    }
+
+    async function reportInvoice(id) {
+        const reason = prompt("Why are you reporting this invoice?");
+        if (reason === null) return;
+        const res = await apiFetch("/api/invoices/" + id + "/report", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ reason }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        alert(data.message || data.error);
+        loadInvoices();
+    }
+
+    document.getElementById("fund-btn").addEventListener("click", async () => {
+        const status = document.getElementById("fund-status");
+        status.textContent = "Funding...";
+        const res = await apiFetch("/api/fund-me", { method: "POST" });
+        if (!res) return;
+        const data = await res.json();
+        status.textContent = data.message || data.error;
+    });
+
+    document.getElementById("logout-link").addEventListener("click", async (e) => {
+        e.preventDefault();
+        await apiFetch("/api/logout", { method: "POST" });
+        window.location.href = "/patients/login";
+    });
+
+    loadProfile();
+    loadInvoices();
+    </script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Doctor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='platform.css') }}">
+</head>
+<body>
+    <div id="container">
+
+        <div id="header">
+            <h2>Doctor Dashboard</h2>
+            <p class="subtitle" id="welcome-msg">Loading...</p>
+        </div>
+
+        <div id="nav">
+            <a href="/">Home</a>
+            <a href="/campaigns">Browse Campaigns</a>
+            <a href="#" id="logout-link">Logout</a>
+        </div>
+
+        <div id="content">
+
+            <div class="card">
+                <h3>Your Wallet</h3>
+                <p>XRP Address: <code id="xrp-address">—</code></p>
+                <button id="fund-btn">Fund Wallet (Testnet)</button>
+                <span id="fund-status" class="status-msg"></span>
+            </div>
+
+            <div class="card">
+                <h3>Reserve Account</h3>
+                <p>Balance: <strong id="reserve-balance">—</strong> XRP</p>
+                <form id="add-reserve-form" style="display:inline;">
+                    <input type="number" id="reserve-amount" placeholder="Amount" step="0.01" min="0.01" required style="width:120px;">
+                    <button type="submit">Add to Reserve</button>
+                </form>
+                <span id="reserve-status" class="status-msg"></span>
+            </div>
+
+            <div class="card">
+                <h3>Create Invoice</h3>
+                <div id="create-error" class="error-msg" style="display:none;"></div>
+                <div id="create-success" class="success-msg" style="display:none;"></div>
+                <form id="create-invoice-form">
+                    <label for="patient_id">Patient ID</label><br>
+                    <input type="number" id="patient_id" name="patient_id" placeholder="e.g. 2" required><br><br>
+
+                    <label for="amount">Amount (XRP)</label><br>
+                    <input type="number" id="amount" name="amount" placeholder="25" step="0.01" min="0.01" required><br><br>
+
+                    <label for="treatment_description">Treatment Description (optional)</label><br>
+                    <input type="text" id="treatment_description" name="treatment_description" placeholder="MRI Scan"><br><br>
+
+                    <label>
+                        <input type="checkbox" id="crowdfund_enabled"> Enable Crowdfunding
+                    </label><br><br>
+
+                    <button type="submit">Create Invoice</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Your Invoices</h3>
+                <div id="invoices-list"><p>Loading...</p></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    async function apiFetch(url, opts) {
+        const res = await fetch(url, opts);
+        if (res.status === 401) { window.location.href = "/doctors/login"; return null; }
+        return res;
+    }
+
+    async function loadProfile() {
+        const res = await apiFetch("/api/me");
+        if (!res) return;
+        const u = await res.json();
+        document.getElementById("welcome-msg").textContent = "Welcome, Dr. " + u.name;
+        document.getElementById("xrp-address").textContent = u.xrp_address;
+    }
+
+    async function loadReserve() {
+        const res = await apiFetch("/api/reserve/balance");
+        if (!res) return;
+        const data = await res.json();
+        document.getElementById("reserve-balance").textContent = data.balance.toFixed(2);
+    }
+
+    async function loadInvoices() {
+        const res = await apiFetch("/api/invoices");
+        if (!res) return;
+        const data = await res.json();
+        const container = document.getElementById("invoices-list");
+
+        if (!data.invoices || data.invoices.length === 0) {
+            container.innerHTML = "<p>No invoices yet.</p>";
+            return;
+        }
+
+        container.innerHTML = data.invoices.map(inv => {
+            const paid = (inv.payments || []).reduce((s, p) => s + p.amount, 0);
+            const remaining = Math.max(0, inv.amount - paid).toFixed(2);
+            const canUseReserve = inv.status !== "paid" && remaining > 0;
+
+            return `
+            <div class="card invoice-card">
+                <div class="invoice-header">
+                    <strong>Invoice #${inv.id}</strong> (Patient #${inv.patient_id})
+                    <span class="badge badge-${inv.status}">${inv.status}</span>
+                </div>
+                ${inv.treatment_description ? `<p class="treatment">${inv.treatment_description}</p>` : ""}
+                <p>Amount: <strong>${inv.amount} XRP</strong> &mdash; Paid: ${paid} XRP &mdash; Remaining: ${remaining} XRP</p>
+                <p>Crowdfunding: ${inv.crowdfund_enabled ? "ON" : "OFF"}</p>
+                ${canUseReserve ? `<button onclick="useReserve(${inv.id})">Cover gap from Reserve</button>` : ""}
+            </div>`;
+        }).join("");
+    }
+
+    async function useReserve(invoiceId) {
+        const res = await apiFetch("/api/reserve/use-for-invoice/" + invoiceId, { method: "POST" });
+        if (!res) return;
+        const data = await res.json();
+        alert(data.message || data.error);
+        loadInvoices();
+        loadReserve();
+    }
+
+    document.getElementById("create-invoice-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById("create-error");
+        const okEl = document.getElementById("create-success");
+        errEl.style.display = "none";
+        okEl.style.display = "none";
+
+        const res = await apiFetch("/api/invoices/create", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                patient_id: parseInt(document.getElementById("patient_id").value),
+                amount: parseFloat(document.getElementById("amount").value),
+                treatment_description: document.getElementById("treatment_description").value || null,
+                crowdfund_enabled: document.getElementById("crowdfund_enabled").checked,
+            }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (res.ok) {
+            okEl.textContent = data.message + " (ID: " + data.invoice_id + ")";
+            okEl.style.display = "block";
+            document.getElementById("create-invoice-form").reset();
+            loadInvoices();
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = "block";
+        }
+    });
+
+    document.getElementById("add-reserve-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById("reserve-amount").value);
+        const status = document.getElementById("reserve-status");
+        status.textContent = "Adding...";
+        const res = await apiFetch("/api/reserve/add", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ amount }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        status.textContent = data.message || data.error;
+        document.getElementById("reserve-amount").value = "";
+        loadReserve();
+    });
+
+    document.getElementById("fund-btn").addEventListener("click", async () => {
+        const status = document.getElementById("fund-status");
+        status.textContent = "Funding...";
+        const res = await apiFetch("/api/fund-me", { method: "POST" });
+        if (!res) return;
+        const data = await res.json();
+        status.textContent = data.message || data.error;
+    });
+
+    document.getElementById("logout-link").addEventListener("click", async (e) => {
+        e.preventDefault();
+        await apiFetch("/api/logout", { method: "POST" });
+        window.location.href = "/doctors/login";
+    });
+
+    loadProfile();
+    loadReserve();
+    loadInvoices();
+    </script>
+</body>
+</html>

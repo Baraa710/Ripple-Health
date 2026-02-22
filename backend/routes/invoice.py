@@ -9,6 +9,33 @@ from extensions import db
 invoice_bp = Blueprint("invoice", __name__)
 
 
+def _invoice_json(invoice):
+    return {
+        "id": invoice.id,
+        "doctor_id": invoice.doctor_id,
+        "patient_id": invoice.patient_id,
+        "amount": invoice.amount,
+        "treatment_description": invoice.treatment_description,
+        "status": invoice.status,
+        "crowdfund_enabled": invoice.crowdfund_enabled,
+        "payments": invoice.payments or [],
+        "reported_at": invoice.reported_at.isoformat() if invoice.reported_at else None,
+        "report_reason": invoice.report_reason,
+        "redacted_at": invoice.redacted_at.isoformat() if invoice.redacted_at else None,
+    }
+
+
+@invoice_bp.route("", methods=["GET"])
+@login_required
+def list_invoices():
+    """Return invoices for the current user (as doctor or patient)."""
+    if current_user.user_type == "doctor":
+        invoices = Invoice.query.filter_by(doctor_id=current_user.id).all()
+    else:
+        invoices = Invoice.query.filter_by(patient_id=current_user.id).all()
+    return jsonify({"invoices": [_invoice_json(i) for i in invoices]}), 200
+
+
 @invoice_bp.route("/create", methods=["POST"])
 @login_required
 def create_invoice():
@@ -54,21 +81,7 @@ def create_invoice():
 
     db.session.commit()
 
-    return jsonify({"message": "Invoice created", "invoice_id": invoice.id}), 
-def _invoice_json(invoice):
-    return {
-        "id": invoice.id,
-        "doctor_id": invoice.doctor_id,
-        "patient_id": invoice.patient_id,
-        "amount": invoice.amount,
-        "treatment_description": invoice.treatment_description,
-        "status": invoice.status,
-        "crowdfund_enabled": invoice.crowdfund_enabled,
-        "payments": invoice.payments or [],
-        "reported_at": invoice.reported_at.isoformat() if invoice.reported_at else None,
-        "report_reason": invoice.report_reason,
-        "redacted_at": invoice.redacted_at.isoformat() if invoice.redacted_at else None,
-    }
+    return jsonify({"message": "Invoice created", "invoice_id": invoice.id}), 201
 
 
 @invoice_bp.route("/<int:invoice_id>", methods=["GET"])
