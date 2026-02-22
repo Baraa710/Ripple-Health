@@ -1,11 +1,9 @@
 import xrpl
-from xrpl.wallet import Wallet
+from xrpl.wallet import Wallet, generate_faucet_wallet
 from xrpl.clients import JsonRpcClient
 from xrpl.models.transactions import Payment
 from xrpl.transaction import submit_and_wait
-from xrpl.models.requests import AccountInfo  # Add this import
-
-import os
+from xrpl.models.requests import AccountInfo
 
 # Connect to testnet
 TESTNET_URL = "https://s.altnet.rippletest.net:51234/"
@@ -51,7 +49,22 @@ def send_payment(sender_seed: str, recipient_address: str, amount: str):
         )
         
         response = submit_and_wait(payment, client, sender_wallet)
-        return response
+        if response and response.result and "hash" in response.result:
+            return response.result["hash"]
+        return None
     except Exception as e:
         print(f"Error sending payment: {e}")
         return None
+
+
+def fund_account_from_faucet(seed: str):
+    """
+    Fund an existing account (by seed) using the XRPL testnet faucet.
+    Returns (success: bool, message: str).
+    """
+    try:
+        wallet = Wallet.from_seed(seed)
+        generate_faucet_wallet(client, wallet=wallet, debug=False)
+        return True, "Account funded successfully"
+    except Exception as e:
+        return False, str(e)

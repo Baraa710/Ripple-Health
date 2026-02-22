@@ -1,30 +1,18 @@
-import sqlite3
-from flask import g
+from flask_sqlalchemy import SQLAlchemy
 
-DATABASE = 'ripple_health.db'
+db = SQLAlchemy()
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
-    return db
 
-def init_db():
-    with sqlite3.connect(DATABASE) as conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                account_address TEXT UNIQUE NOT NULL,
-                user_type TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
+def init_db(app):
+    """Bind DB to app and create tables."""
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
 
-def close_db(e=None):
-    db = g.pop('_database', None)
-    if db is not None:
-        db.close()
+
+def close_db(exception=None):
+    """Teardown: remove session."""
+    try:
+        db.session.remove()
+    except Exception:
+        pass

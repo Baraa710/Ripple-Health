@@ -9,16 +9,26 @@ class Invoice(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
+    # relationships
+    doctor = db.relationship("User", foreign_keys=[doctor_id], back_populates="doctor_invoices")
+    patient = db.relationship("User", foreign_keys=[patient_id], back_populates="patient_invoices")
+
     amount = db.Column(db.Float, nullable=False)
+
+    treatment_description = db.Column(db.String(500), nullable=True)
 
     crowdfund_enabled = db.Column(db.Boolean, default=False)
 
-    status = db.Column(db.String(50), default="unpaid")  
-    # unpaid, partially_paid, paid
+    status = db.Column(db.String(50), default="unpaid")  # unpaid, partially_paid, paid, reported, redacted
 
     payments = db.Column(db.JSON, default=list)
-    # list of dicts:
-    # {payer_id, amount, tx_hash, method}
+
+    # Crawlback: report suspicious / fraudulent charge
+    reported_at = db.Column(db.DateTime, nullable=True)
+    report_reason = db.Column(db.String(500), nullable=True)
+    reported_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    redacted_at = db.Column(db.DateTime, nullable=True)
+    redacted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -30,7 +40,6 @@ class Invoice(db.Model):
             "method": method
         }
 
-        # Ensure payments list exists
         if not self.payments:
             self.payments = []
 

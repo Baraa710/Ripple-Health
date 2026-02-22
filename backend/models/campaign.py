@@ -1,54 +1,39 @@
-class Campaign:
-    """
-    Represents a health campaign with its details.
-    Attributes:
-    - campaign_id: Unique identifier for the campaign.
-    - name: The name of the campaign.
-    - doctor_address: The XRP Ledger account address of the doctor running the campaign.
-    - description: A brief description of the campaign.
-    - target_amount: Target amount in XRP drops.
-    - current_amount: Current amount raised in XRP drops.
-    - start_date: The start date of the campaign.
-    - end_date: The end date of the campaign.
-    - status: 'active', 'completed', or 'cancelled'.
-    """
-    def __init__(self, campaign_id: str, name: str, doctor_address: str, description: str, target_amount: int, start_date: str, end_date: str):
-        self.campaign_id = campaign_id
-        self.name = name
-        self.doctor_address = doctor_address
-        self.description = description
-        self.target_amount = target_amount
-        self.current_amount = 0
-        self.start_date = start_date
-        self.end_date = end_date
-        self.status = 'active'
+from extensions import db
+from datetime import datetime
+
+
+class Campaign(db.Model):
+    """Crowdfunding campaign linked to an invoice (one-to-one when crowdfund_enabled)."""
+    __tablename__ = "campaign"
+
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey("invoice.id"), nullable=False, unique=True)
+    doctor_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(1000), default="")
+
+    target_amount = db.Column(db.Float, nullable=False)  # XRP, matches invoice.amount
+    current_amount = db.Column(db.Float, default=0.0)
+
+    status = db.Column(db.String(50), default="active")  # active, completed, cancelled
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=True)
+
+    invoice = db.relationship("Invoice", backref=db.backref("campaign", uselist=False))
+    doctor = db.relationship("User", backref="campaigns")
 
     def to_dict(self):
         return {
-            'campaign_id': self.campaign_id,
-            'name': self.name,
-            'doctor_address': self.doctor_address,
-            'description': self.description,
-            'target_amount': self.target_amount,
-            'current_amount': self.current_amount,
-            'start_date': self.start_date,
-            'end_date': self.end_date,
-            'status': self.status
+            "id": self.id,
+            "invoice_id": self.invoice_id,
+            "doctor_id": self.doctor_id,
+            "name": self.name,
+            "description": self.description,
+            "target_amount": self.target_amount,
+            "current_amount": self.current_amount,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
         }
-
-    def record_donation(self, amount: int):
-        """
-        Records a donation to the campaign.
-        Updates the current amount and checks if the campaign is completed.
-        """
-        self.current_amount += amount
-        if self.current_amount >= self.target_amount:
-            self.status = 'completed'
-    
-    def goal_reached(self):
-        """
-        Checks if the campaign has reached its target amount.
-        """
-        return self.current_amount >= self.target_amount
-    
-    
