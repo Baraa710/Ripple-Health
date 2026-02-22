@@ -37,11 +37,24 @@
         </div>
     </div>
 
+    <div id="overlay" class="overlay" style="display:none;">
+        <div class="overlay-content">
+            <div class="spinner"></div>
+            <p id="overlay-msg">Processing Payment...</p>
+        </div>
+    </div>
+
     <script>
-    const API = "";
+    function showOverlay(msg) {
+        document.getElementById("overlay-msg").textContent = msg || "Processing Payment...";
+        document.getElementById("overlay").style.display = "flex";
+    }
+    function hideOverlay() {
+        document.getElementById("overlay").style.display = "none";
+    }
 
     async function apiFetch(url, opts) {
-        const res = await fetch(API + url, opts);
+        const res = await fetch(url, opts);
         if (res.status === 401) { window.location.href = "/patients/login"; return null; }
         return res;
     }
@@ -95,11 +108,13 @@
 
     async function payInvoice(id, amount) {
         if (amount <= 0) { alert("Nothing to pay"); return; }
+        showOverlay("Processing Payment...");
         const res = await apiFetch("/api/payments/pay/" + id, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ amount: parseFloat(amount) }),
         });
+        hideOverlay();
         if (!res) return;
         const data = await res.json();
         alert(data.message || data.error);

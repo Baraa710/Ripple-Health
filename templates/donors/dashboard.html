@@ -38,7 +38,22 @@
         </div>
     </div>
 
+    <div id="overlay" class="overlay" style="display:none;">
+        <div class="overlay-content">
+            <div class="spinner"></div>
+            <p id="overlay-msg">Processing Payment...</p>
+        </div>
+    </div>
+
     <script>
+    function showOverlay(msg) {
+        document.getElementById("overlay-msg").textContent = msg || "Processing Payment...";
+        document.getElementById("overlay").style.display = "flex";
+    }
+    function hideOverlay() {
+        document.getElementById("overlay").style.display = "none";
+    }
+
     async function apiFetch(url, opts) {
         const res = await fetch(url, opts);
         if (res.status === 401) { window.location.href = "/donors/login"; return null; }
@@ -90,11 +105,13 @@
     async function contribute(e, invoiceId, form) {
         e.preventDefault();
         const amount = parseFloat(form.querySelector("[name=amount]").value);
+        showOverlay("Processing Donation...");
         const res = await apiFetch("/api/payments/pay/" + invoiceId, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ amount, method: "crowdfunding" }),
         });
+        hideOverlay();
         if (!res) return;
         const data = await res.json();
         alert(data.message || data.error);
