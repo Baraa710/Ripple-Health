@@ -29,6 +29,14 @@
                 <span id="fund-status" class="status-msg"></span>
             </div>
 
+            <div class="card" id="credential-card">
+                <h3>Verification Credential</h3>
+                <p id="cred-db-status">Loading...</p>
+                <p id="cred-chain-status"></p>
+                <div id="cred-actions"></div>
+                <span id="cred-status-msg" class="status-msg"></span>
+            </div>
+
             <div class="card">
                 <h3>Reserve Account</h3>
                 <p>Balance: <strong id="reserve-balance">—</strong> XRP</p>
@@ -76,12 +84,53 @@
         return res;
     }
 
+    let currentUser = null;
+
     async function loadProfile() {
         const res = await apiFetch("/api/me");
         if (!res) return;
-        const u = await res.json();
-        document.getElementById("welcome-msg").textContent = "Welcome, Dr. " + u.name;
-        document.getElementById("xrp-address").textContent = u.xrp_address;
+        currentUser = await res.json();
+        document.getElementById("welcome-msg").textContent = "Welcome, Dr. " + currentUser.name;
+        document.getElementById("xrp-address").textContent = currentUser.xrp_address;
+        loadCredentialStatus();
+    }
+
+    async function loadCredentialStatus() {
+        const dbEl = document.getElementById("cred-db-status");
+        const chainEl = document.getElementById("cred-chain-status");
+        const actionsEl = document.getElementById("cred-actions");
+
+        if (currentUser.is_verified_doctor) {
+            dbEl.innerHTML = 'Database: <span class="badge badge-verified">Verified</span>';
+        } else {
+            dbEl.innerHTML = 'Database: <span class="badge badge-unpaid">Not Verified</span>';
+            chainEl.textContent = "Ask an admin to verify your account.";
+            actionsEl.innerHTML = "";
+            return;
+        }
+
+        const res = await apiFetch("/api/credentials/status");
+        if (!res) return;
+        const data = await res.json();
+
+        if (data.on_chain_verified) {
+            chainEl.innerHTML = 'On-chain: <span class="badge badge-verified">Accepted</span>';
+            actionsEl.innerHTML = "";
+        } else {
+            chainEl.innerHTML = 'On-chain: <span class="badge badge-unpaid">Pending</span>';
+            actionsEl.innerHTML = '<button id="accept-cred-btn">Accept Credential On-Chain</button>';
+            document.getElementById("accept-cred-btn").addEventListener("click", acceptCredential);
+        }
+    }
+
+    async function acceptCredential() {
+        const statusEl = document.getElementById("cred-status-msg");
+        statusEl.textContent = "Submitting transaction...";
+        const res = await apiFetch("/api/credentials/accept", { method: "POST" });
+        if (!res) return;
+        const data = await res.json();
+        statusEl.textContent = data.message || data.error;
+        if (data.tx_hash) loadCredentialStatus();
     }
 
     async function loadReserve() {

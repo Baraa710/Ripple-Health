@@ -3,7 +3,11 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from models.user import User
 from extensions import db
-from xrpl_utils.xrpl_utils import create_account, fund_account_from_faucet
+from flask import current_app
+from xrpl_utils.xrpl_utils import (
+    create_account, fund_account_from_faucet,
+    issue_credential, accept_credential, check_credential, revoke_credential,
+)
 from datetime import datetime
 
 users_bp = Blueprint("users", __name__)
@@ -126,9 +130,94 @@ def verify_doctor(user_id):
     user = User.query.get_or_404(user_id)
     if user.user_type != "doctor":
         return jsonify({"error": "Only doctors can be verified"}), 400
+
     user.is_verified_doctor = True
     db.session.commit()
-    return jsonify({"message": "Doctor verified", "user_id": user_id}), 200
+
+    issuer_seed = current_app.config.get("ISSUER_SEED", "")
+    tx_hash = None
+    cred_error = None
+    if issuer_seed:
+        ok, result = issue_credential(issuer_seed, user.xrp_address)
+        if ok:
+            tx_hash = result
+        else:
+            cred_error = result
+            print(f"[CREDENTIAL] Failed to issue credential: {result}")
+    else:
+        cred_error = "ISSUER_SEED not set"
+        print("[CREDENTIAL] ISSUER_SEED env var is empty — skipping on-chain credential")
+
+    return jsonify({
+        "message": "Doctor verified",
+        "user_id": user_id,
+        "credential_issued": bool(tx_hash),
+        "tx_hash": tx_hash,
+        "credential_error": cred_error,
+    }), 200
+
+
+@users_bp.route("/credentials/accept", methods=["POST"])
+@login_required
+def accept_doctor_credential():
+    """Doctor accepts a pending VerifiedDoctor credential on-chain."""
+    if current_user.user_type != "doctor":
+        return jsonify({"error": "Only doctors can accept credentials"}), 403
+
+    issuer_seed = current_app.config.get("ISSUER_SEED", "")
+    if not issuer_seed:
+        return jsonify({"error": "Platform issuer not configured"}), 500
+
+    from xrpl.wallet import Wallet
+    issuer_address = Wallet.from_seed(issuer_seed).address
+
+    ok, result = accept_credential(current_user.xrp_seed, issuer_address)
+    if ok:
+        return jsonify({"message": "Credential accepted on-chain", "tx_hash": result}), 200
+    return jsonify({"error": f"Failed to accept credential: {result}"}), 400
+
+
+@users_bp.route("/credentials/status", methods=["GET"])
+@login_required
+def credential_status():
+    """Check if the current doctor has an accepted on-chain credential."""
+    issuer_seed = current_app.config.get("ISSUER_SEED", "")
+    if not issuer_seed:
+        return jsonify({"on_chain_verified": False, "reason": "Issuer not configured"}), 200
+
+    from xrpl.wallet import Wallet
+    issuer_address = Wallet.from_seed(issuer_seed).address
+
+    verified = check_credential(current_user.xrp_address, issuer_address)
+    return jsonify({"on_chain_verified": verified}), 200
+
+
+@users_bp.route("/users/<int:user_id>/revoke", methods=["PUT"])
+@login_required
+def revoke_doctor(user_id):
+    """Admin revokes a doctor's verification and on-chain credential."""
+    admin_email = os.environ.get("ADMIN_EMAIL")
+    if not admin_email or current_user.email != admin_email:
+        return jsonify({"error": "Only admin can revoke doctors"}), 403
+
+    user = User.query.get_or_404(user_id)
+    if user.user_type != "doctor":
+        return jsonify({"error": "Only doctors can be revoked"}), 400
+
+    user.is_verified_doctor = False
+    db.session.commit()
+
+    issuer_seed = current_app.config.get("ISSUER_SEED", "")
+    revoked_on_chain = False
+    if issuer_seed:
+        ok, _ = revoke_credential(issuer_seed, user.xrp_address)
+        revoked_on_chain = ok
+
+    return jsonify({
+        "message": "Doctor verification revoked",
+        "user_id": user_id,
+        "credential_revoked": revoked_on_chain,
+    }), 200
 
 
 @users_bp.route("/users/<int:user_id>", methods=["GET"])

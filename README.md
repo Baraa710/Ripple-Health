@@ -7,6 +7,9 @@ Crowdfund & Connect is a decentralized finance (DeFi) healthcare payment platfor
 The platform increases trust, transparency, and accessibility in healthcare payments using blockchain technology.
 
 ## Features
+- **On-Chain Doctor Verification (XRPL Credentials)**
+    Doctors are verified using XRPL's native Credentials amendment. When an admin verifies a doctor, the platform issues a `VerifiedDoctor` credential on-chain via `CredentialCreate`. The doctor then accepts it via `CredentialAccept`, making their verification publicly visible on the ledger. Campaigns and invoices display an "On-Chain Verified" badge when the credential is accepted. Credentials can also be revoked on-chain via `CredentialDelete`.
+
 - **Direct Doctor-to-Patient Billing**
     Verified doctors post treatment invoices on-chain. Each invoice includes doctor ID, patient ID, amount, treatment description, and timestamp. Patients can instantly pay the invoice using XRP.
 
@@ -79,6 +82,7 @@ pip install -r requirements.txt
 | `SECRET_KEY` | `dev-secret-change-in-production` | Flask session secret |
 | `DATABASE_URI` | `sqlite:///ripple_health.db` | Database connection string |
 | `ADMIN_EMAIL` | *(none)* | Email of admin user (can verify doctors & redact invoices) |
+| `ISSUER_SEED` | *(none)* | XRPL seed for the platform's credential issuer account (on-chain doctor verification) |
 
 ### 3. Run
 ```bash
@@ -108,7 +112,10 @@ Open **http://127.0.0.1:5000** in your browser.
 | POST | `/api/fund-me` | Yes | Fund wallet from testnet faucet |
 | GET | `/api/users/<id>` | No | Get user by ID |
 | GET | `/api/users/verified` | No | List verified doctors |
-| PUT | `/api/users/<id>/verify` | Admin | Verify a doctor |
+| PUT | `/api/users/<id>/verify` | Admin | Verify a doctor (+ issue on-chain credential) |
+| PUT | `/api/users/<id>/revoke` | Admin | Revoke doctor verification (+ revoke credential) |
+| POST | `/api/credentials/accept` | Doctor | Accept pending on-chain credential |
+| GET | `/api/credentials/status` | Yes | Check on-chain credential status |
 
 ### Invoices (`/api/invoices`)
 | Method | Path | Auth | Description |
@@ -138,8 +145,19 @@ Open **http://127.0.0.1:5000** in your browser.
 | GET | `/api/campaigns` | No | List active campaigns |
 | GET | `/api/campaigns/<id>` | No | Campaign details |
 
+## On-Chain Doctor Verification (XRPL Credentials)
+
+CrowdCare uses XRPL's native **Credentials** amendment to verify doctors on-chain:
+
+1. **Admin verifies a doctor** (`PUT /api/users/<id>/verify`) — the platform's issuer account issues a `VerifiedDoctor` credential to the doctor's XRP address.
+2. **Doctor accepts the credential** (`POST /api/credentials/accept`) — the credential is accepted on-chain and becomes visible to anyone querying the ledger.
+3. **Campaigns show on-chain status** — if the issuing doctor's credential is accepted, campaigns display an "On-Chain Verified" badge.
+4. **Revocation** (`PUT /api/users/<id>/revoke`) — the admin can revoke verification, which also deletes the credential from the ledger.
+
+**Setup**: Set the `ISSUER_SEED` environment variable to a funded XRPL testnet account seed. The platform uses this account to issue and revoke credentials.
+
 ## Technologies Used
 - **Frontend**: HTML, CSS, JavaScript (vanilla fetch API)
 - **Backend**: Python, Flask, Flask-Login, SQLAlchemy, SQLite
-- **Blockchain**: XRPL (XRP Ledger), xrpl-py library
+- **Blockchain**: XRPL (XRP Ledger), xrpl-py library, XRPL Credentials
 - **Network**: XRPL Testnet

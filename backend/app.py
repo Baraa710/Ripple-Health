@@ -25,6 +25,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URI", f"sqlite:///{_db_path}"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["ISSUER_SEED"] = os.environ.get("ISSUER_SEED", "")
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -61,4 +62,9 @@ def _print_routes():
 if __name__ == "__main__":
     print("Registered routes:")
     _print_routes()
+    if app.config.get("ISSUER_SEED"):
+        from xrpl.wallet import Wallet
+        print(f"  ISSUER_SEED is set (issuer address: {Wallet.from_seed(app.config['ISSUER_SEED']).address})")
+    else:
+        print("  WARNING: ISSUER_SEED not set — on-chain credentials disabled")
     app.run(debug=True)

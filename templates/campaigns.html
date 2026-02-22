@@ -54,7 +54,11 @@
             <div class="card campaign-card">
                 <div class="invoice-header">
                     <strong>${c.name}</strong>
-                    ${c.is_verified_doctor ? '<span class="badge badge-verified">Verified Doctor</span>' : ""}
+                    ${c.on_chain_verified
+                        ? '<span class="badge badge-verified">On-Chain Verified</span>'
+                        : c.is_verified_doctor
+                            ? '<span class="badge badge-verified">Verified Doctor</span>'
+                            : ""}
                 </div>
                 <p>Doctor: ${c.doctor_name || "Unknown"}</p>
                 <p>${c.description || ""}</p>
