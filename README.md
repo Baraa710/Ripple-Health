@@ -173,6 +173,17 @@ Both `issue_credential` and `accept_credential` now use a **ledger-query fallbac
 
 This pattern ensures the API never falsely reports failure when the on-chain state confirms success.
 
+## Future Developments
+
+### Escrow-Based Crowdfunding
+Currently, crowdfunding contributions are sent directly to the doctor's wallet. A more secure approach would use [XRPL Escrow](https://xrpl.org/docs/concepts/payment-types/escrow) to hold funds until the campaign goal is met or a deadline passes. If the goal isn't reached, escrowed funds automatically return to donors — no trust required. This also strengthens the crawlback mechanism: if an invoice is reported as fraudulent while contributions are still in escrow, the escrow can be cancelled before funds are ever released to the doctor.
+
+### Check-Based Crawlback Refunds
+When a fraudulent invoice is redacted, there is currently no mechanism to recover funds already paid. [XRPL Checks](https://xrpl.org/docs/concepts/payment-types/checks) would allow the platform to require the doctor to issue a Check back to the patient or donors. The Check sits on-chain until the recipient is ready to cash it, providing a non-custodial refund path that doesn't require the doctor and recipient to be online at the same time.
+
+### Decentralized Identity (DID)
+Doctor and patient identities currently live only in the SQLite database. [XRPL DID](https://xrpl.org/docs/concepts/accounts/decentralized-identifiers) would allow each user to have a verifiable, portable on-chain identity tied to their XRP account. A doctor's verification status, credentials, and history could be queried directly from the ledger by any application — not just this platform. This moves trust from a single database to the decentralized ledger, enabling interoperability with other healthcare or identity systems.
+
 ## Technologies Used
 - **Frontend**: HTML, CSS, JavaScript (vanilla fetch API)
 - **Backend**: Python, Flask, Flask-Login, SQLAlchemy, SQLite
