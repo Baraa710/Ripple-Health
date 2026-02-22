@@ -156,6 +156,23 @@ CrowdCare uses XRPL's native **Credentials** amendment to verify doctors on-chai
 
 **Setup**: Set the `ISSUER_SEED` environment variable to a funded XRPL testnet account seed. The platform uses this account to issue and revoke credentials.
 
+### Handling Ambiguous XRPL Responses
+
+During development we encountered a recurring issue with `xrpl-py`'s `submit_and_wait` function: credential transactions (`CredentialCreate`, `CredentialAccept`) would succeed on the ledger but the function would either return an empty `engine_result` or throw an `XRPLReliableSubmissionException` before confirming the outcome. This caused the API to report failure even though the credential was actually written on-chain.
+
+**Symptoms observed:**
+- `submit_and_wait` returns a response with an empty `engine_result` — the transaction landed but the result field is missing
+- `submit_and_wait` throws `XRPLReliableSubmissionException: Transaction failed: tecDUPLICATE` on a second attempt, proving the first attempt did succeed
+- The UI shows "Failed to accept credential" but on page reload the credential appears as accepted
+
+**How we solved it:**
+Both `issue_credential` and `accept_credential` now use a **ledger-query fallback**. When the response is ambiguous (empty result code, exception, or non-`tesSUCCESS` code), the functions query the doctor's `AccountObjects` on-chain to check whether the credential actually exists and is accepted. If it does, the operation is reported as successful. This handles three cases:
+1. **Normal return with empty `engine_result`** — falls back to ledger query
+2. **`tecDUPLICATE` exception** — credential already exists, treated as success
+3. **Other exceptions** — ledger query determines if the transaction landed despite the error
+
+This pattern ensures the API never falsely reports failure when the on-chain state confirms success.
+
 ## Technologies Used
 - **Frontend**: HTML, CSS, JavaScript (vanilla fetch API)
 - **Backend**: Python, Flask, Flask-Login, SQLAlchemy, SQLite
