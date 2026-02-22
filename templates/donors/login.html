@@ -1,0 +1,71 @@
+<!doctype html>
+
+<!-- {% extends 'base.html' %}
+
+{% block header %}
+  <h2>{% block title %}Login Page{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %}
+
+
+{% endblock content %} -->
+<!--
+TODO: This is a comment. Change this header comment to describe the 
+web page and include your name as author.
+-->
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title> Donor's Login </title>
+    <link rel="stylesheet" href="platform.css">
+
+</head>
+
+<body>
+    <div id="container">
+
+        <div id="header"> 
+            <h2> Donor's Portal </h2>
+        </div>
+
+
+            <div id="content">
+
+                <div class="card">
+                    <h3>Log in</h3>
+                            <form action="/donors/dashboard" method="POST">
+                                <label for="email">Email</label><br>
+                                <input type="email" id="email" name="email" placeholder="donor@gmail.com" required><br><br>
+
+                                <label for="id">Donor's ID</label><br>
+                                <input type="text" id="id" name="Key" placeholder="D0123" required><br><br>
+                                <button type="submit">Continue</button>
+                            </form>
+
+                </div> 
+                <div class="card-footer text-center pt-0 px-lg-2 px-1">
+                    <p class="mb-4 text-sm mx-auto">
+                        Already have an account?
+                        <a href="{{ url_for('donors.login') }}" class="text-primary text-gradient font-weight-bold">Log In</a>
+                    </p>
+                </div>  
+                <!-- Viewing an Invoice-->
+                <div class="card">
+                    <h3>View Invoices</h3>
+
+                    <p>Browse active medical invoices that need funding.</p>
+
+                    <a href="/donors/invoices">
+                        <button type="button">Browse Campaigns</button>
+                    </a>
+                    </div>
+
+            </div>
+    </div>
+</body>
+
+</html>

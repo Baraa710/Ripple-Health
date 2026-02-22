@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice</title>
+  <style>
+    body { font-family: 'Helvetica', Arial, sans-serif; margin: 40px; color: #333; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+    .invoice-title { font-size: 36px; font-weight: bold; }
+    .company-info { text-align: right; }
+    .parties { display: flex; justify-content: space-between; margin: 40px 0; }
+    .party { width: 45%; }
+    .party h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+    th { background: #f5f5f5; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    .totals { width: 300px; margin-left: auto; margin-top: 20px; }
+    .totals tr td { border: none; padding: 8px 0; }
+    .total-row { font-weight: bold; font-size: 18px; border-top: 2px solid #000; padding-top: 10px !important; }
+    .notes { margin-top: 40px; padding: 20px; background: #f9f9f9; border-left: 4px solid #000; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="invoice-title">INVOICE</div>
+    <div class="company-info">
+      <div><strong>Invoice #:</strong> {{ invoiceNumber }}</div>
+      <div><strong>Date:</strong> {{ createdDate }}</div>
+      <div><strong>Due:</strong> {{ dueDate }}</div>
+    </div>
+  </div>
+  
+  <div class="parties">
+    <div class="party">
+      <h3>From</h3>
+      <strong>{{ doctors.name }}</strong><br>
+      {{ doctors.address1 }}<br>
+      {{ doctors.address2 }}<br>
+      {{ doctors.tax }}
+    </div>
+    <div class="party">
+      <h3>To</h3>
+      <strong>{{ patients.name }}</strong><br>
+      {{ patients.address1 }}<br>
+      {{ patients.address2 }}<br>
+      {{ patients.tax }}
+    </div>
+  </div>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align: right;">Hours</th>
+        <th style="text-align: right;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.description }}</td>
+        <td style="text-align: right;">{{ item.hours }}</td>
+        <td style="text-align: right;">{{ currency }} {{ item.price }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+  <table class="totals">
+    <tr><td>Subtotal:</td><td style="text-align: right;">{{ currency }} {{ subTotal }}</td></tr>
+    <tr><td>Tax ({{ taxRate }}%):</td><td style="text-align: right;">{{ currency }} {{ taxAmount }}</td></tr>
+    <tr class="total-row"><td>Total:</td><td style="text-align: right;">{{ currency }} {{ total }}</td></tr>
+  </table>
+  
+  <div class="notes">
+    <strong>Notes:</strong><br>
+    {{ footerText }}<br>
+    {{ footerText2 }}
+  </div>
+</body>
+</html>

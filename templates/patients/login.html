@@ -1,4 +1,16 @@
 <!doctype html>
+<!-- 
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>{% block title %}Login Page{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %} -->
+  <p>
+    <link rel="stylesheet" href="platform.css"> 
+  </p>
+
 <!--
 TODO: This is a comment. Change this header comment to describe the 
 web page and include your name as author.
@@ -49,6 +61,12 @@ web page and include your name as author.
                             <li>Start a crowdfunding campaign if needed</li>
                             <li>Report suspicious charges (crawlback demo)</li>
                         </ul>
+                </div>
+                <div class="card-footer text-center pt-0 px-lg-2 px-1">
+                    <p class="mb-4 text-sm mx-auto">
+                        Don't have an account?
+                    <a href="{{ url_for('patients.signup') }}" class="text-primary text-gradient font-weight-bold"> Sign Up</a>
+                    </p>
                 </div>
 
             </div>
