@@ -7,12 +7,17 @@ from routes.invoice import invoice_bp
 from routes.payment import payment_bp
 from routes.reserve import reserve_bp
 from routes.campaign import campaign_bp
+from routes.pages import pages_bp
 from models.user import User
 from models.invoice import Invoice
 from models.reserve import ReserveAccount
 from models.campaign import Campaign
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), "..", "templates"),
+    static_folder=os.path.join(os.path.dirname(__file__), "..", "static"),
+)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
 _db_dir = os.path.dirname(os.path.abspath(__file__))
 _db_path = os.path.normpath(os.path.join(_db_dir, "ripple_health.db")).replace("\\", "/")
@@ -43,6 +48,7 @@ app.register_blueprint(invoice_bp, url_prefix="/api/invoices")
 app.register_blueprint(payment_bp, url_prefix="/api/payments")
 app.register_blueprint(reserve_bp, url_prefix="/api/reserve")
 app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
+app.register_blueprint(pages_bp)
 
 
 def _print_routes():

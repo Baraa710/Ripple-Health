@@ -1,47 +1,75 @@
-<!-- {% extends 'auth.html' %}### -->
-<!-- {% block content %} -->
-<div class="col-xl-4 col-lg-5 col-md-7 d-flex flex-column mx-lg-0 mx-auto">
-    <div class="card card-plain">
-        <div class="card-header pb-0 text-start">
-            <h4 class="font-weight-bolder">Sign Up</h4>
-            <p class="mb-0">Register Account</p>
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Doctor Sign Up</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='platform.css') }}">
+</head>
+<body>
+    <div id="container">
+
+        <div id="header">
+            <h2>Doctor's Portal</h2>
+            <p class="subtitle">Create your account</p>
         </div>
 
-        <div class="notification is-danger">
-
+        <div id="nav">
+            <a href="/">Home</a>
+            <a href="/campaigns">Browse Campaigns</a>
         </div>
 
-        <div class="card-body">
-            <form role="form" method="POST" action="{{ url_for('doctors.signup') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div id="content">
 
-                <div class="mb-3">
-                    <input type="text" name="name" class="form-control form-control-lg" placeholder="Name"
-                        aria-label="Name" required>
-                </div>
-                <div class="mb-3">
-                    <input type="email" name="email" class="form-control form-control-lg" placeholder="Email"
-                        aria-label="Email" required>
-                </div>
-                <div class="mb-3">
-                    <input type="password" name="password" class="form-control form-control-lg" placeholder="Password"
-                        aria-label="Password" required>
-                </div>
-                  <div class="mb-3">
-                    <input type="text" id="license_key "name="License Key" class="form-control form-control-lg" placeholder="License"
-                        aria-label="license_key" required>
-                </div>
-                <div class="text-center">
-                    <button type="submit" class="btn btn-lg btn-primary btn-lg w-100 mt-4 mb-0">Sign Up</button>
-                </div>
-            </form>
-        </div>
-        <div class="card-footer text-center pt-0 px-lg-2 px-1">
-            <p class="mb-4 text-sm mx-auto">
-                Already have an account?
-                <a href="{{ url_for('doctors.login') }}" class="text-primary text-gradient font-weight-bold">Log In</a>
+            <div class="card">
+                <h3>Sign Up</h3>
+                <div id="error-msg" class="error-msg" style="display:none;"></div>
+                <form id="signup-form">
+                    <label for="name">Name</label><br>
+                    <input type="text" id="name" name="name" placeholder="Dr. Full Name" required><br><br>
+
+                    <label for="email">Email</label><br>
+                    <input type="email" id="email" name="email" placeholder="doctor@email.com" required><br><br>
+
+                    <label for="password">Password</label><br>
+                    <input type="password" id="password" name="password" placeholder="Choose a password" required><br><br>
+
+                    <button type="submit">Sign Up</button>
+                </form>
+            </div>
+
+            <p>Already have an account?
+                <a href="/doctors/login">Log In</a>
             </p>
+
         </div>
     </div>
-</div>
-<!--{% endblock %}-->
+
+    <script>
+    document.getElementById("signup-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById("error-msg");
+        errEl.style.display = "none";
+
+        const res = await fetch("/api/register", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                name: document.getElementById("name").value,
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value,
+                user_type: "doctor",
+            }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            window.location.href = "/doctors/login";
+        } else {
+            errEl.textContent = data.error || "Registration failed";
+            errEl.style.display = "block";
+        }
+    });
+    </script>
+</body>
+</html>
