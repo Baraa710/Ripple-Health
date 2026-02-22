@@ -57,7 +57,8 @@ The platform increases trust, transparency, and accessibility in healthcare paym
 
 
 ## How to Run
-1. 
+1. Backend: `cd backend`, create a virtualenv, `pip install -r requirements.txt`. Set optional env: `DATABASE_URI` (default `sqlite:///ripple_health.db`), `SECRET_KEY`, `ADMIN_EMAIL` (for verifying doctors and redacting invoices). Run `python app.py` (from `backend/` so `app.py` and imports resolve).
+2. Frontend: open the HTML files in `frontend/` or serve them with any static server. Point API calls to the backend (e.g. `http://127.0.0.1:5000/api`). 
 
 ## Technologies Used
 - HTML
